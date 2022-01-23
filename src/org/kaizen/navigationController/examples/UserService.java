@@ -7,10 +7,16 @@ package org.kaizen.navigationController.examples;
 
 public interface UserService {
     
-    public interface Observer {
+    public interface AuthenticationObserver {
         public void authenticiationWasSuccessful(UserService source, User user);
         public void authenticiationDidFail(UserService source);
     }
     
-    public void authenticateUser(String name, char[] password, Observer observer);
+    public interface RegistrationObserver {
+        public void didRegisterUser(UserService source, User user);
+        public void reegistrationDidFail(UserService source);
+    }
+    
+    public void authenticateUser(String name, char[] password, AuthenticationObserver observer);
+    public void registerUser(String name, char[] password, RegistrationObserver observer);
 }

@@ -5,19 +5,39 @@
  */
 package org.kaizen.navigationController.examples;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  * @author shane.whitehead
  */
 public class DefaultUserService implements UserService {
 
-    @Override
-    public void authenticateUser(String name, char[] password, Observer observer) {
-        if ("fred".equals(name)) {
-            observer.authenticiationWasSuccessful(this, new DefaultUser("fred"));
-        } else {
-            observer.authenticiationDidFail(this);
-        }
+    private List<User> users;
+
+    public DefaultUserService() {
+        users = new ArrayList<>();
+        users.add(new DefaultUser("fred"));
     }
-    
+
+    @Override
+    public void authenticateUser(String name, char[] password, AuthenticationObserver observer) {
+        for (User user : users) {
+            if (name.equals(user.getName())) {
+                observer.authenticiationWasSuccessful(this, user);
+                return;
+            }
+        }
+
+        observer.authenticiationDidFail(this);
+    }
+
+    @Override
+    public void registerUser(String name, char[] password, RegistrationObserver observer) {
+        User user = new DefaultUser(name);
+        users.add(user);
+        observer.didRegisterUser(this, user);
+    }
+
 }

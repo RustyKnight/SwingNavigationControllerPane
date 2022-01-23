@@ -24,6 +24,7 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -52,11 +53,11 @@ public class ObserverExample {
             }
         });
     }
-    
+
     public class RootNavigationPane extends NavigationControllerPane {
 
         enum View {
-            WELCOME, LOGIN, MAIN;
+            WELCOME, LOGIN, MAIN, REGISTER;
         }
         private UserService userService;
 
@@ -74,20 +75,30 @@ public class ObserverExample {
         public UserService getUserService() {
             return userService;
         }
-
-        protected void push(View view) {
+        
+        // How do we deal with "context"?
+        protected JComponent makeViewComponentFor(View view) {
             switch (view) {
                 case WELCOME:
-                    push(makeWelcomeView());
-                    break;
+                    return makeWelcomeView();
                 case LOGIN:
-                    push(makeLoginView());
-                    break;
+                    return makeLoginView();
+                case REGISTER: 
+                    return makeRegistrationView();
             }
+            return null;
+        }
+
+        protected void push(View view) {
+            push(makeViewComponentFor(view));
         }
 
         protected void popCurrentView() {
             pop();
+        }
+        
+        protected void replaceWith(View view) {
+            replaceWith(makeViewComponentFor(view));
         }
 
         // These factory methods could be handled by a factory
@@ -102,6 +113,7 @@ public class ObserverExample {
 
                 @Override
                 public void register(WelcomePane source) {
+                    push(View.REGISTER);
                 }
             });
             return welcomePane;
@@ -132,6 +144,21 @@ public class ObserverExample {
             return mainPane;
         }
         
+        protected RegisterPane makeRegistrationView() {
+            RegisterPane registerPane = new RegisterPane(getUserService(), new RegisterPane.Observer() {
+                @Override
+                public void didRegsiterUser(RegisterPane source, User user) {
+                    replaceWith(View.LOGIN);
+                }
+
+                @Override
+                public void didCancelRegistration(RegisterPane source) {
+                    pop();
+                }
+            });
+            return registerPane;
+        }
+
     }
 
     public abstract class NavigationPane extends JPanel implements NavigatableView {
@@ -187,11 +214,11 @@ public class ObserverExample {
             add(label, gbc);
 
             JButton loginButton = new JButton("Login");
-            JButton loginRegister = new JButton("Register");
+            JButton registerButton = new JButton("Register");
 
             JPanel actionsPane = new JPanel();
             actionsPane.add(loginButton);
-            actionsPane.add(loginRegister);
+            actionsPane.add(registerButton);
 
             gbc.weighty = 0;
             add(actionsPane, gbc);
@@ -200,6 +227,13 @@ public class ObserverExample {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     observer.login(WelcomePane.this);
+                }
+            });
+            
+            registerButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    observer.register(WelcomePane.this);
                 }
             });
         }
@@ -236,7 +270,7 @@ public class ObserverExample {
                     // Do some log
                     String userName = userNameField.getText();
                     char[] password = passwordField.getPassword();
-                    userServicem.authenticateUser(userName, password, new UserService.Observer() {
+                    userServicem.authenticateUser(userName, password, new UserService.AuthenticationObserver() {
                         @Override
                         public void authenticiationWasSuccessful(UserService source, User user) {
                             observer.didLogin(LoginPane.this, user);
@@ -331,6 +365,88 @@ public class ObserverExample {
             });
         }
 
+    }
+
+    public class RegisterPane extends NavigationPane {
+
+        public interface Observer {
+            public void didRegsiterUser(RegisterPane source, User user);
+            public void didCancelRegistration(RegisterPane source);
+        }
+
+        public RegisterPane(UserService userService, Observer observer) {
+            setLayout(new GridBagLayout());
+            JTextField userNameField = new JTextField(10);
+            JPasswordField passwordField = new JPasswordField(10);
+
+            JPanel credentialPanel = new JPanel(new GridBagLayout());
+            JPanel actionsPane = new JPanel(new GridLayout(1, 2, 4, 4));
+
+            JButton loginButton = new JButton("Register");
+            loginButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    // Do some log
+                    String userName = userNameField.getText();
+                    char[] password = passwordField.getPassword();
+                    
+                    userService.registerUser(userName, password, new UserService.RegistrationObserver() {
+                        @Override
+                        public void didRegisterUser(UserService source, User user) {
+                            observer.didRegsiterUser(RegisterPane.this, user);
+                        }
+
+                        @Override
+                        public void reegistrationDidFail(UserService source) {
+                            JOptionPane.showMessageDialog(RegisterPane.this, "You are not worthy", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    });
+                }
+            });
+
+            JButton cancelButton = new JButton("Cancel");
+            cancelButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    observer.didCancelRegistration(RegisterPane.this);
+                }
+            });
+
+            GridBagConstraints gbc = new GridBagConstraints();
+
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.anchor = GridBagConstraints.LINE_END;
+            gbc.insets = new Insets(4, 4, 4, 4);
+
+            credentialPanel.add(new JLabel("User name"), gbc);
+            gbc.gridy++;
+            credentialPanel.add(new JLabel("Password"), gbc);
+
+            gbc.gridx++;
+            gbc.gridy = 0;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+
+            credentialPanel.add(userNameField, gbc);
+            gbc.gridy++;
+            credentialPanel.add(passwordField, gbc);
+
+            actionsPane.add(cancelButton);
+            actionsPane.add(loginButton);
+
+            gbc = new GridBagConstraints();
+            gbc.gridx = 0;
+            gbc.gridwidth = GridBagConstraints.REMAINDER;
+            gbc.fill = gbc.HORIZONTAL;
+
+            JLabel titleLable = new JLabel("Give user all your details");
+            titleLable.setFont(titleLable.getFont().deriveFont(Font.BOLD, 24));
+
+            add(titleLable, gbc);
+            add(new JSeparator(), gbc);
+            add(credentialPanel, gbc);
+            add(actionsPane, gbc);
+        }
     }
 
 }
