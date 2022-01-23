@@ -24,6 +24,8 @@ Seriously, `CardLayout` is a great option for switching between known views.  It
 
 `CardLayout` also requires all the views to be instansiated up-front (again, you "can" get around it, but it's kind of messy)
 
+Again, this is an **experiment!**.  Besides, it looks cool!
+
 # Enhancements
 
 This is a first draft attempt.  I'd like the "model" to be decoupled from the "navigation pane" more, so I don't need to extend directly from the `NavigationPane` when ever I want to implement a naviagtion workflow.  So instead, we could define a model which defined the navigation requirements for a group of views and could then be applied to a instance of `NavigationPane`.
