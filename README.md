@@ -16,6 +16,14 @@ The API also provides a "optional" `interface` for views that might want/need to
 
 Why not?  It's cool!  I mean, just look at it, it's cool!
 
+# But what about `CardLayout`?
+
+Good question!  What about it?
+
+Seriously, `CardLayout` is a great option for switching between known views.  It's not very good and transitioning state through those views, for example, a login or registration flow, where data might need to pass from one view to another.  It can be done, but I don't find it all the easy to do.
+
+`CardLayout` also requires all the views to be instansiated up-front (again, you "can" get around it, but it's kind of messy)
+
 # Enhancements
 
 This is a first draft attempt.  I'd like the "model" to be decoupled from the "navigation pane" more, so I don't need to extend directly from the `NavigationPane` when ever I want to implement a naviagtion workflow.  So instead, we could define a model which defined the navigation requirements for a group of views and could then be applied to a instance of `NavigationPane`.
