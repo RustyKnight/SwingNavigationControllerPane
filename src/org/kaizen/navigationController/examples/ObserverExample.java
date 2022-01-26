@@ -12,7 +12,7 @@ package org.kaizen.navigationController.examples;
  */
 package stackoverflow;
 
-import org.kaizen.navigationController.NavigationControllerPane;
+import org.kaizen.navigationController.ViewNavigationPane;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -23,6 +23,8 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -32,7 +34,15 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
+import org.kaizen.navigationController.AbstractViewNavigationController;
+import org.kaizen.navigationController.DefaultViewNavigationModel;
 import org.kaizen.navigationController.NavigatableView;
+import org.kaizen.navigationController.ViewNavigationController;
+import org.kaizen.navigationController.ViewNavigationModel;
+import org.kaizen.navigationController.examples.ObserverExample.ExampleNavigationController.View;
+import static org.kaizen.navigationController.examples.ObserverExample.ExampleNavigationController.View.LOGIN;
+import static org.kaizen.navigationController.examples.ObserverExample.ExampleNavigationController.View.REGISTER;
+import static org.kaizen.navigationController.examples.ObserverExample.ExampleNavigationController.View.WELCOME;
 
 public class ObserverExample {
 
@@ -45,8 +55,17 @@ public class ObserverExample {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
+                ViewNavigationModel<ExampleNavigationController.View> model = new DefaultViewNavigationModel<>();
+                ViewNavigationPane navigationPane = new ViewNavigationPane() {
+                    @Override
+                    public Dimension getPreferredSize() {
+                        return new Dimension(400, 400);
+                    }
+                };
+                ViewNavigationController<ExampleNavigationController.View> controller = new ExampleNavigationController(model, navigationPane, userService);
+
                 JFrame frame = new JFrame();
-                frame.add(new RootNavigationPane(userService));
+                frame.add(navigationPane);
                 frame.pack();
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);
@@ -54,11 +73,108 @@ public class ObserverExample {
         });
     }
 
-    public class RootNavigationPane extends NavigationControllerPane {
+    public class ExampleNavigationController extends AbstractViewNavigationController<ExampleNavigationController.View> {
 
         enum View {
             WELCOME, LOGIN, MAIN, REGISTER;
         }
+
+        private UserService userService;
+        private Map<Object, Object> context;
+
+        public ExampleNavigationController(ViewNavigationModel<View> model, ViewNavigationPane navigationView, UserService userService) {
+            super(model, navigationView);
+            this.userService = userService;
+            context = new HashMap<>();
+            push(View.WELCOME);
+        }
+
+        protected UserService getUserService() {
+            return userService;
+        }
+
+        @Override
+        protected JComponent componentForView(View view) {
+            switch (view) {
+                case WELCOME:
+                    return makeWelcomeView();
+                case LOGIN:
+                    return makeLoginView();
+                case REGISTER:
+                    return makeRegistrationView();
+                case MAIN:
+                    User user = (User) context.get("user");
+                    if (user == null) {
+                        throw new RuntimeException("User can not be null when presenting main view");
+                    }
+                    return makeMainView(user);
+            }
+            return null;
+        }
+
+        // These factory methods could be handled by a factory
+        // implementation, but I think I'm getting beyond the scope
+        // of what I'm trying to do here
+        protected WelcomePane makeWelcomeView() {
+            WelcomePane welcomePane = new WelcomePane(new WelcomePane.Observer() {
+                @Override
+                public void login(WelcomePane source) {
+                    getModel().push(View.LOGIN);
+                }
+
+                @Override
+                public void register(WelcomePane source) {
+                    getModel().push(View.REGISTER);
+                }
+            });
+            return welcomePane;
+        }
+
+        protected LoginPane makeLoginView() {
+            LoginPane loginPane = new LoginPane(getUserService(), new LoginPane.Observer() {
+                @Override
+                public void didLogin(LoginPane source, User user) {
+                    context.put("user", user);
+                    getModel().replaceWith(View.MAIN);
+                }
+
+                @Override
+                public void didCancel(LoginPane source) {
+                    getModel().pop();
+                }
+            });
+            return loginPane;
+        }
+
+        protected MainPane makeMainView(User user) {
+            MainPane mainPane = new MainPane(user, new MainPane.Observer() {
+                @Override
+                public void logout(MainPane source) {
+                    context.remove("user");
+                    getModel().popToRoot();
+                }
+            });
+            return mainPane;
+        }
+
+        protected RegisterPane makeRegistrationView() {
+            RegisterPane registerPane = new RegisterPane(getUserService(), new RegisterPane.Observer() {
+                @Override
+                public void didRegsiterUser(RegisterPane source, User user) {
+                    getModel().replaceWith(LOGIN);
+                }
+
+                @Override
+                public void didCancelRegistration(RegisterPane source) {
+                    getModel().pop();
+                }
+            });
+            return registerPane;
+        }
+    }
+
+    public class RootNavigationPane extends ViewNavigationPane {
+
         private UserService userService;
 
         public RootNavigationPane(UserService userService) {
@@ -75,7 +191,7 @@ public class ObserverExample {
         public UserService getUserService() {
             return userService;
         }
-        
+
         // How do we deal with "context"?
         protected JComponent makeViewComponentFor(View view) {
             switch (view) {
@@ -83,7 +199,7 @@ public class ObserverExample {
                     return makeWelcomeView();
                 case LOGIN:
                     return makeLoginView();
-                case REGISTER: 
+                case REGISTER:
                     return makeRegistrationView();
             }
             return null;
@@ -96,7 +212,7 @@ public class ObserverExample {
         protected void popCurrentView() {
             pop();
         }
-        
+
         protected void replaceWith(View view) {
             replaceWith(makeViewComponentFor(view));
         }
@@ -143,7 +259,7 @@ public class ObserverExample {
             });
             return mainPane;
         }
-        
+
         protected RegisterPane makeRegistrationView() {
             RegisterPane registerPane = new RegisterPane(getUserService(), new RegisterPane.Observer() {
                 @Override
@@ -229,7 +345,7 @@ public class ObserverExample {
                     observer.login(WelcomePane.this);
                 }
             });
-            
+
             registerButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -370,7 +486,9 @@ public class ObserverExample {
     public class RegisterPane extends NavigationPane {
 
         public interface Observer {
+
             public void didRegsiterUser(RegisterPane source, User user);
+
             public void didCancelRegistration(RegisterPane source);
         }
 
@@ -389,7 +507,7 @@ public class ObserverExample {
                     // Do some log
                     String userName = userNameField.getText();
                     char[] password = passwordField.getPassword();
-                    
+
                     userService.registerUser(userName, password, new UserService.RegistrationObserver() {
                         @Override
                         public void didRegisterUser(UserService source, User user) {

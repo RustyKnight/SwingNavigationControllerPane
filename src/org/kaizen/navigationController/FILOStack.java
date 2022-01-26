@@ -53,4 +53,8 @@ public class FILOStack<V> {
     public void remove(V value) {
         contents.remove(value);
     }
+    
+    public void clear() {
+        contents.clear();
+    }
 }

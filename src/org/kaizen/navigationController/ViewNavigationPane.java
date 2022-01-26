@@ -22,29 +22,10 @@ import org.kaizen.animation.ranges.IntRange;
 import org.kaizen.animation.ranges.Range;
 
 /**
- * Why is this contained within a component?  Why isn't separated into
- * a controller/model?
- * 
- * The primary answer is, it's complicated.  Try to animate the transition
- * is actually really complicated.  Realistically, it should be using
- * a custom layout manager to perform these operations.  I've been able
- * to "hack" around it slightly, but it's still one of those "this will
- * go wrong badly" situations.
- * 
- * In theory, we could separate the model, but this adds another layer
- * of complexity, with the need to introduce an observer pattern to 
- * monitor the various changes that will occur - not saying it's
- * a bad idea, it's just one more level of complexity
- * 
- * Another consideration is in how the animation is working.  In order to
- * make the fade work, we need to implement a "proxy" component, so, 
- * the layout manager would not only be managing the position of the
- * component but also its transparency ... not really its job
- * 
- * You also end up at a point where the model wants to push a component,
- * not really it's job
+ * The primary component used to present the actual components been managed
+ * within the navigation stack
  */
-public class NavigationControllerPane extends JPanel {
+public class ViewNavigationPane extends JPanel {
 
     protected enum TransitionType {
         PUSH, POP;
@@ -52,7 +33,8 @@ public class NavigationControllerPane extends JPanel {
 
     private FILOStack<ViewProxyPane> viewStack;
 
-    public NavigationControllerPane() {
+    public ViewNavigationPane() {
+        setLayout(new BorderLayout());
         viewStack = new FILOStack<>();
     }
 
@@ -105,26 +87,6 @@ public class NavigationControllerPane extends JPanel {
         viewStack.push(nextView);
 
         transitionBetween(currentView, nextView, TransitionType.PUSH);
-
-//        JComponent rootPane = getRootPane();
-//        if (rootPane instanceof Transitionable) {
-//            Transitionable delagte = (Transitionable) rootPane;
-//            delagte.transitionBetween(TransitionType.PUSH, currentView, view, new Transitionable.Observer() {
-//                @Override
-//                public void didCompleteTransition(TransitionType type, JComponent oldView, JComponent newView) {
-//                    didDismiss(oldView);
-//                    didPresent(newView);
-//                    System.out.println("<< Push (" + viewStack.size() + ")");
-//                }
-//            });
-//        } else {
-//            rootPane.removeAll();
-//            rootPane.add(view);
-//            rootPane.revalidate();
-//            rootPane.repaint();
-//            didDismiss(currentView);
-//            didPresent(view);
-//        }
     }
 
     public void pop() {
@@ -139,31 +101,6 @@ public class NavigationControllerPane extends JPanel {
             removeAll();
             didDismiss(currentView);
         }
-
-//        if (nextView != null && rootPane instanceof Transitionable) {
-//            willPresent(nextView);
-//            Transitionable delagte = (Transitionable) rootPane;
-//            delagte.transitionBetween(TransitionType.POP, currentView, nextView, new Transitionable.Observer() {
-//                @Override
-//                public void didCompleteTransition(TransitionType type, JComponent oldView, JComponent newView) {
-//                    didDismiss(oldView);
-//                    didPresent(newView);
-//                    System.out.println("<< Pop (" + viewStack.size() + ")");
-//                }
-//            });
-//        } else {
-//            getRootPane().removeAll();
-//            if (nextView != null) {
-//                willPresent(nextView);
-//                getRootPane().add(nextView);
-//                getRootPane().revalidate();
-//                getRootPane().repaint();
-//                didDismiss(currentView);
-//                didPresent(nextView);
-//            } else {
-//                didDismiss(currentView);
-//            }
-//        }
     }
 
     public void popToRoot() {
@@ -181,34 +118,9 @@ public class NavigationControllerPane extends JPanel {
         }
 
         transitionBetween(currentView, rootView, TransitionType.POP);
-
-//        JComponent rootPane = getRootPane();
-//        if (rootPane instanceof Transitionable) {
-//            willDismiss(currentView);
-//            willPresent(rootView);
-//            Transitionable delagte = (Transitionable) rootPane;
-//            delagte.transitionBetween(TransitionType.POP, currentView, rootView, new Transitionable.Observer() {
-//                @Override
-//                public void didCompleteTransition(TransitionType type, JComponent oldView, JComponent newView) {
-//                    didDismiss(oldView);
-//                    didPresent(newView);
-//                    System.out.println("<< popToRoot (" + viewStack.size() + ")");
-//                }
-//            });
-//        } else {
-//            willDismiss(currentView);
-//            willPresent(rootView);
-//            rootPane.removeAll();
-//            didDismiss(currentView);
-//            rootPane.add(rootView);
-//            didPresent(rootView);
-//            rootPane.revalidate();
-//            rootPane.repaint();
-//        }
     }
 
     public void replaceWith(JComponent view) {
-//        viewStack.pop();
         ViewProxyPane last = viewStack.peekLast();
         push(view);
         if (last != null) {
