@@ -20,7 +20,7 @@ Why not?  It's cool!  I mean, just look at it, it's cool!
 
 Good question!  What about it?
 
-Seriously, `CardLayout` is a great option for switching between known views.  It's not very good and transitioning state through those views, for example, a login or registration flow, where data might need to pass from one view to another.  It can be done, but I don't find it all the easy to do.
+Seriously, `CardLayout` is a great option for switching between known views.  It's not very good at transitioning state through those views, for example, a login or registration flow, where data might need to pass from one view to another.  It can be done, but I don't find it all that easy or clean to do.
 
 `CardLayout` also requires all the views to be instansiated up-front (again, you "can" get around it, but it's kind of messy)
 
