@@ -26,10 +26,20 @@ Seriously, `CardLayout` is a great option for switching between known views.  It
 
 Again, this is an **experiment!**.  Besides, it looks cool!
 
-# Enhancements
+# Basic Design
 
-This is a first draft attempt.  I'd like the "model" to be decoupled from the "navigation pane" more, so I don't need to extend directly from the `NavigationPane` when ever I want to implement a naviagtion workflow.  So instead, we could define a model which defined the navigation requirements for a group of views and could then be applied to a instance of `NavigationPane`.
+The API consists of a model, view and controller.  In most cases, you shouldn't need to modify/extend from the model or view, the controller (or coordinator) is responsible for managing the naviagtion logic and creating the physical components used by the view.
 
-The short comming to this basically boils down to the need for the "model" to generate "components" which can be pushed.  The model really shouldn't be creating visual elements.  It might be possible to, instead, bind the "model" with the "navigation pane" through the use of generics and use a "factory" to actually generate the physical components.  So the model would instruct the navigation pane to "push a view" and the navigation pane would ask the factory for a visiual component which represented the models concept of a "view".
+## The madness behind the design...
 
-The model would also need to provide some kind of observer pattern which would be used to notify, in paritcular, the navigation pane when a view was pushed or popped...and frankly getting the animation to work was hard enough 🤪
+One of the core issues I was struggling with was to decouple the model from the view.  This should make the model agnostic, but it should also not be dealing with the physical components, that's not it's responsibility.  The model should simply provide a logic representation of the current navigation stack.
+
+I originally had the navigation pane controlling the logic and view component generation, but the navigation pane has a complex workflow and I felt that extending from it could cause no end of issues, instead I was trying to focus on providing a compestion or dependency injection workflow.
+
+### The "controller"
+
+Step the "controller".  This is a bridge between the model and the navigation view.  It interacts with the model and navigation view and coordinates the business logic.  It also creates the physical components used to represent the model data.
+
+One of the (many) reasons for doing it this way was about how to maintain context.  In the inclueded simple example, we need some way to track the "current user", as this needs to be inject into the workflow (arguably it could be controlled via the `UserService`, but the point was to demonstrate how data could be passed between views).
+
+In this way, the controller acts as a data source for the given navigation workflow (remember, a navigation workflow should focus on a single desirable stack, if you need to have multiple workflows, then use more stacks, the API can present a new navigation view within an existing naviagtion view after all).  This can greatly simply the data which is passed between views and reduce the need to expose data which a individual view simple doesn't need.
