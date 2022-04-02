@@ -46,4 +46,4 @@ In this way, the controller acts as a data source for the given navigation workf
 
 ### Animation and layout
 
-Swing layout managers are really meant to perform animation.  While the example makes use of a common layout manager, a better solution would be to take control over the layout directly (probably via the navigation container component direcly)
+Swing layout managers aren't really meant to perform animation.  While the example makes use of a common layout manager, a better solution would be to take control over the layout directly (probably via the navigation container component direcly)
